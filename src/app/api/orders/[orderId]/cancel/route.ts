@@ -1,0 +1,42 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { cancelOrder } from '@/lib/orders/activate'
+
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ orderId: string }> }
+) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const adminClient = createAdminClient()
+    const { data: profile } = await adminClient.from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+    const { orderId } = await params
+    const body = await request.json().catch(() => ({}))
+
+    const { wasActive, proxyTrigger } = await cancelOrder(orderId, user.id, body.notes)
+
+    if (wasActive) {
+      const rebuildUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/proxy/rebuild`
+      await fetch(rebuildUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.REBUILD_SECRET}`,
+        },
+        body: JSON.stringify({ trigger_source: proxyTrigger, trigger_order_id: orderId }),
+      })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+}

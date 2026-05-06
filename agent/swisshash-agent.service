@@ -1,0 +1,17 @@
+[Unit]
+Description=SwissHash Proxy Agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/swisshash-agent
+Environment=PROXY_AGENT_SECRET=DEIN_SECRET_HIER
+ExecStart=/usr/bin/node /opt/swisshash-agent/server.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
