@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Zap, Clock, Settings, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { Zap, Clock, Settings, CheckCircle2, AlertTriangle, Bitcoin, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import type { Package, PoolConfig } from '@/types/domain'
 import { toast } from 'sonner'
@@ -64,6 +64,15 @@ export function PackageGrid({
   const [selectedPool, setSelectedPool] = useState<string>(defaultPoolId ?? 'none')
   const [loading, setLoading] = useState<string | null>(null)
   const [confirmPkg, setConfirmPkg] = useState<Package | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'btcpay'>('stripe')
+  const [btcpayAvailable, setBtcpayAvailable] = useState(false)
+
+  useEffect(() => {
+    // Check if BTCPay is configured (server returns 503 if not)
+    fetch('/api/btcpay/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(r => { if (r.status !== 503) setBtcpayAvailable(true) })
+      .catch(() => {})
+  }, [])
   const [currency, setCurrency] = useState<'EUR' | 'USD'>('EUR')
   const [eurRate, setEurRate] = useState<number>(0.92)
   const [selectedDurations, setSelectedDurations] = useState<Record<number, number>>({
@@ -109,10 +118,25 @@ export function PackageGrid({
     if (!confirmPkg) return
     setLoading(confirmPkg.id)
     try {
-      const res = await fetch('/api/stripe/checkout', {
+      // Step 1: create order
+      const orderRes = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ package_id: confirmPkg.id, pool_config_id: selectedPool }),
+      })
+      const orderData = await orderRes.json()
+      if (!orderRes.ok) throw new Error(orderData.error)
+
+      // Step 2: redirect to payment provider
+      const endpoint = paymentMethod === 'btcpay' ? '/api/btcpay/checkout' : '/api/stripe/checkout'
+      const payBody = paymentMethod === 'btcpay'
+        ? { order_id: orderData.id }
+        : { package_id: confirmPkg.id, pool_config_id: selectedPool }
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payBody),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -204,6 +228,33 @@ export function PackageGrid({
                     </div>
                   </div>
                 </div>
+                {/* Payment method selector */}
+                {btcpayAvailable && (
+                  <div>
+                    <p className="text-slate-400 text-xs uppercase tracking-wide mb-2">Zahlungsmethode</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([
+                        { id: 'stripe' as const,  label: 'Kreditkarte',  Icon: CreditCard, sub: 'Visa, Mastercard' },
+                        { id: 'btcpay' as const,  label: 'Bitcoin',      Icon: Bitcoin,    sub: 'Lightning / On-chain' },
+                      ] as const).map(({ id, label, Icon, sub }) => (
+                        <button
+                          key={id}
+                          onClick={() => setPaymentMethod(id)}
+                          className={cn(
+                            'flex flex-col items-center gap-1 p-3 rounded-xl border text-sm transition-all',
+                            paymentMethod === id
+                              ? 'border-orange-500 bg-orange-500/10 text-white'
+                              : 'border-slate-600 bg-slate-700/50 text-slate-400 hover:border-slate-500'
+                          )}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span className="font-medium">{label}</span>
+                          <span className="text-xs opacity-60">{sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <p className="text-slate-400 text-xs text-center">
                   Die Bestellung wird nach Zahlungseingang aktiviert.
                 </p>

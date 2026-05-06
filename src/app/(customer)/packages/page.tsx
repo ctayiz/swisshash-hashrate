@@ -1,12 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { PackageGrid } from '@/components/packages/PackageGrid'
+import { ProfitabilityBanner } from '@/components/packages/ProfitabilityBanner'
 import type { Package } from '@/types/domain'
 
-export default async function PackagesPage() {
+export default async function PackagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ pool_config_id?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { pool_config_id: preselectedPoolId } = await searchParams
 
   const { data: packages } = await supabase
     .from('packages')
@@ -22,7 +29,16 @@ export default async function PackagesPage() {
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: false })
 
-  const defaultPoolId = poolConfigs?.find(p => p.is_default)?.id ?? poolConfigs?.[0]?.id ?? null
+  // Preselect: query param > default pool > first pool
+  const defaultPoolId =
+    preselectedPoolId ??
+    poolConfigs?.find(p => p.is_default)?.id ??
+    poolConfigs?.[0]?.id ??
+    null
+
+  const pkgList = (packages as Package[]) ?? []
+  const hashrates = [...new Set(pkgList.map(p => p.hashrate_th))].sort((a, b) => a - b)
+  const durations = [...new Set(pkgList.map(p => p.duration_days))].sort((a, b) => a - b)
 
   return (
     <div className="space-y-8">
@@ -33,8 +49,10 @@ export default async function PackagesPage() {
         </p>
       </div>
 
+      <ProfitabilityBanner hashrates={hashrates} durations={durations} />
+
       <PackageGrid
-        packages={packages as Package[] ?? []}
+        packages={pkgList}
         poolConfigs={poolConfigs ?? []}
         defaultPoolId={defaultPoolId}
       />

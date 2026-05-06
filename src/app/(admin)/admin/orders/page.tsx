@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/requireAdmin'
 import { OrdersTable } from './OrdersTable'
+import Link from 'next/link'
+import { Download } from 'lucide-react'
 import type { OrderStatus } from '@/types/domain'
 
 interface OrderRow {
@@ -27,9 +29,18 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Alle Bestellungen</h1>
-        <p className="text-slate-400 mt-1">{orders.length} Bestellungen insgesamt</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Alle Bestellungen</h1>
+          <p className="text-slate-400 mt-1">{orders.length} Bestellungen insgesamt</p>
+        </div>
+        <Link
+          href="/api/admin/export/orders"
+          className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          CSV Export
+        </Link>
       </div>
       <OrdersTable orders={orders} />
     </div>

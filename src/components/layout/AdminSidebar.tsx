@@ -4,17 +4,19 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingCart, Users, Package,
-  Radio, Settings, LogOut, Zap, History
+  Radio, LogOut, Zap, TrendingUp, ClipboardList
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 const nav = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { href: '/admin/orders', label: 'Bestellungen', icon: ShoppingCart },
-  { href: '/admin/customers', label: 'Kunden', icon: Users },
-  { href: '/admin/packages', label: 'Pakete', icon: Package },
-  { href: '/admin/proxy', label: 'Proxy-Config', icon: Radio },
+  { href: '/admin',            label: 'Dashboard',    icon: LayoutDashboard, exact: true },
+  { href: '/admin/orders',     label: 'Bestellungen', icon: ShoppingCart },
+  { href: '/admin/customers',  label: 'Kunden',       icon: Users },
+  { href: '/admin/packages',   label: 'Pakete',       icon: Package },
+  { href: '/admin/proxy',      label: 'Proxy-Config', icon: Radio },
+  { href: '/admin/analytics',  label: 'Analytics',    icon: TrendingUp },
+  { href: '/admin/audit',      label: 'Audit-Log',    icon: ClipboardList },
 ]
 
 export function AdminSidebar() {

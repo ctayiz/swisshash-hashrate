@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge'
-import { Zap, Clock, Server, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
+import { Zap, Clock, Server, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react'
+import Link from 'next/link'
 import type { OrderStatus } from '@/types/domain'
 
 interface OrderDetail {
@@ -14,7 +15,7 @@ interface OrderDetail {
   activated_at: string | null
   expires_at: string | null
   package: { name: string } | null
-  pool_config: { pool_url: string; pool_port: number; worker_name: string } | null
+  pool_config: { id: string; pool_url: string; pool_port: number; worker_name: string } | null
 }
 
 interface EventRow {
@@ -35,7 +36,7 @@ export default async function OrderDetailPage({
 
   const { data } = await supabase
     .from('orders')
-    .select('id, hashrate_th, duration_days, price_usd, status, activated_at, expires_at, package:packages(name), pool_config:customer_pool_configs(pool_url, pool_port, worker_name)')
+    .select('id, hashrate_th, duration_days, price_usd, status, activated_at, expires_at, package:packages(name), pool_config:customer_pool_configs(id, pool_url, pool_port, worker_name)')
     .eq('id', orderId)
     .eq('customer_id', user.id)
     .single()
@@ -76,7 +77,18 @@ export default async function OrderDetailPage({
           <h1 className="text-2xl font-bold text-white">Bestellung</h1>
           <p className="text-slate-400 text-sm mt-1 font-mono">{order.id}</p>
         </div>
-        <OrderStatusBadge status={order.status} />
+        <div className="flex items-center gap-3">
+          <OrderStatusBadge status={order.status} />
+          {(order.status === 'active' || order.status === 'expired') && (
+            <Link
+              href={`/packages${order.pool_config ? `?pool_config_id=${order.pool_config.id}` : ''}`}
+              className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Verlängern
+            </Link>
+          )}
+        </div>
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700">

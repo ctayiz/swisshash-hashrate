@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth/requireAdmin'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
+import { Download } from 'lucide-react'
 import type { Profile } from '@/types/domain'
 
 export default async function AdminCustomersPage() {
@@ -27,9 +28,18 @@ export default async function AdminCustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Kunden</h1>
-        <p className="text-slate-400 mt-1">{customers.length} registrierte Nutzer</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Kunden</h1>
+          <p className="text-slate-400 mt-1">{customers.length} registrierte Nutzer</p>
+        </div>
+        <Link
+          href="/api/admin/export/customers"
+          className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          CSV Export
+        </Link>
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700">
