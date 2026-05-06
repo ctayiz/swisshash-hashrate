@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { PackageGrid } from '@/components/packages/PackageGrid'
 import { ProfitabilityBanner } from '@/components/packages/ProfitabilityBanner'
+import { CustomQuoteForm } from '@/components/packages/CustomQuoteForm'
 import type { Package } from '@/types/domain'
 
 export default async function PackagesPage({
@@ -56,6 +57,15 @@ export default async function PackagesPage({
         poolConfigs={poolConfigs ?? []}
         defaultPoolId={defaultPoolId}
       />
+
+      {/* Divider */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 h-px bg-slate-800" />
+        <span className="text-slate-600 text-xs uppercase tracking-widest">Oder</span>
+        <div className="flex-1 h-px bg-slate-800" />
+      </div>
+
+      <CustomQuoteForm />
     </div>
   )
 }

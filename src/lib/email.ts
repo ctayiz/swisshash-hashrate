@@ -72,6 +72,57 @@ export async function sendOrderConfirmation(opts: {
   })
 }
 
+export async function sendCustomQuoteRequest(opts: {
+  customerEmail: string
+  hashrate_th: number
+  duration_days: number
+  message: string
+}): Promise<void> {
+  const transporter = createTransporter()
+  if (!transporter) return
+
+  const adminEmail = process.env.ADMIN_EMAIL ?? 'ticket@swisshash.com'
+
+  await transporter.sendMail({
+    from: `"SwissHash" <${process.env.SMTP_USER}>`,
+    to: adminEmail,
+    replyTo: opts.customerEmail,
+    subject: `[Individuelles Angebot] ${opts.hashrate_th} TH/s · ${opts.duration_days} Tage — ${opts.customerEmail}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1e293b">
+        <div style="background:#1e293b;padding:24px 32px;border-radius:8px 8px 0 0">
+          <h1 style="color:#f97316;margin:0;font-size:18px">SwissHash — Angebotsanfrage</h1>
+        </div>
+        <div style="background:#f8fafc;padding:32px;border-radius:0 0 8px 8px;border:1px solid #e2e8f0">
+          <p style="margin-top:0">Ein Kunde möchte ein individuelles Angebot.</p>
+          <table style="width:100%;border-collapse:collapse;margin:20px 0">
+            <tr style="border-bottom:1px solid #e2e8f0">
+              <td style="padding:10px 0;color:#64748b">Kunde</td>
+              <td style="padding:10px 0;font-weight:600">${opts.customerEmail}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #e2e8f0">
+              <td style="padding:10px 0;color:#64748b">Gewünschte Hashrate</td>
+              <td style="padding:10px 0;font-weight:600">${opts.hashrate_th} TH/s</td>
+            </tr>
+            <tr style="border-bottom:1px solid #e2e8f0">
+              <td style="padding:10px 0;color:#64748b">Gewünschte Laufzeit</td>
+              <td style="padding:10px 0;font-weight:600">${opts.duration_days} Tage</td>
+            </tr>
+            ${opts.message ? `
+            <tr>
+              <td style="padding:10px 0;color:#64748b;vertical-align:top">Nachricht</td>
+              <td style="padding:10px 0;white-space:pre-wrap">${opts.message.replace(/</g, '&lt;')}</td>
+            </tr>` : ''}
+          </table>
+          <p style="color:#64748b;font-size:13px">
+            Antworte direkt auf diese E-Mail um den Kunden zu kontaktieren.
+          </p>
+        </div>
+      </div>
+    `,
+  })
+}
+
 export async function sendAdminNewOrderNotification(opts: {
   customerEmail: string
   orderId: string
